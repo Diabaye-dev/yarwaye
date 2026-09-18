@@ -48,3 +48,8 @@ yarn-error.log*
 # Contexte local du CLI Neon ( IDs projet/branche, ne contient pas de secret mais propre à la machine)
 .neon/
 neon.json
+
+# Contexte local du CLI Neon + dumps d'import (usage ponctuel, jamais poussés)
+.neon/
+neon.json
+import-neon*.sql
