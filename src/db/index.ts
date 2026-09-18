@@ -17,11 +17,14 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
-}
+// Adresse de la base de données.
+// - Sur Vercel/Neon : la variable d'environnement DATABASE_URL est utilisée.
+// - En local (ou si la variable manque au build), on utilise l'adresse par défaut
+//   pour que la compilation ne bloque jamais ("throw" = cause fréchente d'échec
+//   du `npm run build` sur les plateformes d'hébergement).
+const databaseUrl =
+  process.env.DATABASE_URL ??
+  "postgresql://postgres:postgres@127.0.0.1:5432/app_db";
 
 const globalForDb = globalThis as typeof globalThis & {
   __arenaNextJsPostgresqlPool?: Pool;
