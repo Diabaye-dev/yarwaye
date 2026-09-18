@@ -1,0 +1,39 @@
+# Dépendances
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+
+# Build / cache Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Variables d'environnement (NE JAMAIS PUSH — contient DATABASE_URL)
+.env
+.env*
+!.env.example
+
+# Base de données locale
+*.sqlite
+*.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Divers système / éditeur
+.DS_Store
+*.pem
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Turbopack / SWC
+/.turbo
+.swc
+
+# Cache TypeScript
+*.tsbuildinfo

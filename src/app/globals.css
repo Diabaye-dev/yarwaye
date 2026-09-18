@@ -1,0 +1,53 @@
+/*
+  STYLES GLOBAUX — src/app/globals.css
+  Import de Tailwind CSS v4 + quelques utilitaires maison utilisés partout :
+    - police système et lissage des caractères,
+    - masquage des barres de défilement (catégories du POS / vitrine),
+    - règles d'impression pour le ticket de caisse thermique,
+    - petites animations réutilisables.
+*/
+
+@import "tailwindcss";
+
+/* Utilitaire : cache la barre de défilement tout en gardant le défilement */
+.scrollbar-none {
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* Impression : on ne montre que le reçu (.receipt-print) et rien d'autre */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-print,
+  .receipt-print * {
+    visibility: visible;
+  }
+  .receipt-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm; /* largeur d'un rouleau thermique 80 mm */
+  }
+  .print-hidden {
+    display: none !important;
+  }
+}
+
+/* Légère apparition des modales et des toasts */
+@keyframes yarwaye-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-yarwaye {
+  animation: yarwaye-fade-in 0.18s ease-out both;
+}
