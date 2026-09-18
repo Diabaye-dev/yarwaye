@@ -35,6 +35,18 @@ const ssl = wantsSsl
   ? { rejectUnauthorized: process.env.DATABASE_SSL_STRICT === "1" }
   : undefined;
 
+// Les hébergeurs (Neon, Supabase) fournissent des chaînes contenant
+// ?sslmode=require&channel_binding=require. Ces paramètres sont déjà couverts
+// par l'option `ssl` ci-dessus : on les retire de l'URL pour éviter (1) un
+// double réglage contradictoire et (2) l'avertissement de dépréciation émis
+// par le pilote `pg` sur sslmode=require.
+const cleanedUrl = databaseUrl
+  .replace(/([?&])sslmode=[^&]*/g, "$1")
+  .replace(/([?&])channel_binding=[^&]*/g, "$1")
+  .replace(/[?&]+$/, "")
+  .replace(/&&+/g, "&")
+  .replace(/\?&/, "?");
+
 const globalForDb = globalThis as typeof globalThis & {
   __arenaNextJsPostgresqlPool?: Pool;
 };
@@ -42,7 +54,7 @@ const globalForDb = globalThis as typeof globalThis & {
 export const pool =
   globalForDb.__arenaNextJsPostgresqlPool ??
   new Pool({
-    connectionString: databaseUrl,
+    connectionString: cleanedUrl,
     ssl,
     max: Number(process.env.DATABASE_POOL_MAX ?? 3), // connexions simultanées
     idleTimeoutMillis: 10_000, // fermeture des connexions inactives
