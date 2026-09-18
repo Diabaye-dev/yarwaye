@@ -145,3 +145,67 @@ npm start                 # sert l'application
 ```
 
 Codes promo testables dans la vitrine client : `YARWAYE10` (-10 %) et `MALIKA5` (-5 %).
+
+---
+
+## 7. Mettre l'application en ligne gratuitement
+
+Deux services gratuits, sans carte bancaire :
+
+| Besoin | Service | Offre gratuite |
+|---|---|---|
+| Héberger le site Next.js | **Vercel** | Hobby — illimité en trafic personnel |
+| Héberger PostgreSQL | **Neon** | 0,5 Go de données, 1 projet |
+
+### Étape 1 — créer la base de données (Neon)
+1. Aller sur **https://neon.tech** → *Sign in with GitHub*.
+2. **New project** → nom : `yarwaye` → région : *Europe (Frankfurt)* → **Create**.
+3. Bouton **Connect** → copier la **Pooled connection string**, qui ressemble à :
+   `postgresql://user:mdp@ep-xxxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require`
+
+### Étape 2 — publier le code sur GitHub
+Le dépôt `Diabaye-dev/yarwaye` existe déjà : pousser la branche de travail suffit.
+
+### Étape 3 — déployer avec Vercel
+1. Aller sur **https://vercel.com/signup** → *Continue with GitHub*.
+2. **Add New → Project** → importer le dépôt `yarwaye`.
+3. Choisir la branche à déployer (`main` ou `feature/vitrine-client-complete`).
+4. Framework : **Next.js** (auto-détecté), laisser les champs de build par défaut.
+5. Dans **Environment Variables**, ajouter :
+
+   | Nom | Valeur |
+   |---|---|
+   | `DATABASE_URL` | la chaîne copiée depuis Neon (avec `?sslmode=require`) |
+
+6. **Deploy** : ~1 minute, puis une URL du type
+   `https://yarwaye.vercel.app`.
+
+### Étape 4 — rien d'autre à faire
+Aucun terminal, aucune commande `drizzle-kit push` :
+`src/instrumentation.ts` crée les 8 tables et insère les données de démonstration
+**au premier démarrage** du serveur (`CREATE TABLE IF NOT EXISTS`, donc relançable
+sans risque ni doublon).
+
+Pour vérifier : ouvrir **`/api/health`** →
+
+```json
+{ "ok": true, "store": "AGRO SERVICE YARWAYE", "contact": "767866536",
+  "initialisation": { "tables": "créées : users, products, ...", "produits": 12, "ventes": 4 } }
+```
+
+### Variable d'environnement optionnelle
+| Variable | Rôle | Défaut |
+|---|---|---|
+| `DATABASE_SSL_STRICT` | à `1` : exiger un certificat SSL reconnu | `0` (accepte les CAs des offres gratuites) |
+| `DATABASE_POOL_MAX` | nombre max de connexions SQL par instance | `3` (adapté au serverless) |
+
+### Si Neon est en veille
+Les bases gratuites s'endorment après inactivité : la première requête met
+~2-3 s de plus, puis tout revient à la normale. La connexion est réglée avec un
+délai de 10 s pour ne pas afficher d'erreur pendant ce réveil.
+
+### Alternative 100 % française / autres offre
+- **Render.com** (web service gratuit) + base PostgreSQL Supabase gratuite :
+  utiliser `npm run build` / `npm start`, et activer `output: "standalone"` dans
+  `next.config.ts`.
+- **Infomaniak / o2switch** : pour un mutualisé, prévoir Node.js (moins simple).
