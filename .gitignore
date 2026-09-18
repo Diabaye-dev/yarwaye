@@ -37,3 +37,6 @@ yarn-error.log*
 
 # Cache TypeScript
 *.tsbuildinfo
+
+# Paquets Git
+*.bundle
