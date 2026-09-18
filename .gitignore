@@ -40,3 +40,7 @@ yarn-error.log*
 
 # Paquets Git
 *.bundle
+
+# Archives locales (ne jamais pousser)
+*.zip
+*.tar.gz
