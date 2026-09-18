@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { products, stockMovements } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const productId = Number(id);
+    const body = await req.json();
+
+    const { changeQuantity, type, reason, performedBy } = body;
+
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, productId))
+      .limit(1);
+
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    const qty = Number(changeQuantity);
+    if (isNaN(qty) || qty === 0) {
+      return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
+    }
+
+    const newStock = Math.max(0, product.stock + qty);
+
+    const [updatedProduct] = await db
+      .update(products)
+      .set({
+        stock: newStock,
+        updatedAt: new Date(),
+      })
+      .where(eq(products.id, productId))
+      .returning();
+
+    const [movement] = await db
+      .insert(stockMovements)
+      .values({
+        productId,
+        productName: product.name,
+        type: type || (qty > 0 ? "in" : "out"),
+        quantity: qty,
+        previousStock: product.stock,
+        newStock: newStock,
+        reason: reason || (qty > 0 ? "Réapprovisionnement" : "Ajustement inventaire"),
+        performedBy: performedBy || "Yarwaye",
+      })
+      .returning();
+
+    return NextResponse.json({ product: updatedProduct, movement });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to adjust stock" }, { status: 500 });
+  }
+}
