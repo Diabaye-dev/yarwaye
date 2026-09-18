@@ -65,6 +65,24 @@ export default function YarwayeShopPage() {
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
   const [isNewCustomerOpen, setIsNewCustomerOpen] = useState(false);
 
+  // Autodiagnostic de la base : un badge visible dans l'en-tête répond à la
+  // question « pourquoi rien ne s'enregistre ? » sans ouvrir les logs.
+  const [dbStatus, setDbStatus] = useState<any>(null);
+  const [dbPanelOpen, setDbPanelOpen] = useState(false);
+  const [dbChecking, setDbChecking] = useState(false);
+
+  const checkDbStatus = async () => {
+    setDbChecking(true);
+    try {
+      const res = await fetch("/api/db-status");
+      setDbStatus(await res.json());
+    } catch {
+      setDbStatus({ ok: false, titre: "Route /api/db-status injoignable" });
+    } finally {
+      setDbChecking(false);
+    }
+  };
+
   // Récupère produits + ventes + clients + fournisseurs + paramètres en parallèle (1 trajet réseau).
   const loadAllData = async () => {
     try {
@@ -100,11 +118,13 @@ export default function YarwayeShopPage() {
       console.error("Failed to load store data:", err);
     } finally {
       setIsLoading(false);
+      checkDbStatus(); // le badge suit les rafraîchissements de données
     }
   };
 
   useEffect(() => {
     loadAllData();
+    checkDbStatus(); // on vérifie la connexion dès l'ouverture de la page
   }, []);
 
   const storePhone = settings?.phone || "767866536";
@@ -396,6 +416,75 @@ Y
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Badge d'état de la base : vert = les enregistrements passent,
+                  rouge = cause exacte affichée (variable absente, mot de passe,
+                  base en veille, tables manquantes...). */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setDbPanelOpen((v) => !v);
+                    checkDbStatus();
+                  }}
+                  title="État de la connexion à la base de données (cliquer pour re-vérifier)"
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
+                    dbStatus === null
+                      ? "bg-slate-100 text-slate-500 border-slate-200"
+                      : dbStatus.ok
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                      : "bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      dbStatus === null ? "bg-slate-400" : dbStatus.ok ? "bg-emerald-500" : "bg-rose-500"
+                    } ${dbChecking ? "animate-pulse" : ""}`}
+                  />
+                  {dbStatus === null
+                    ? "vérification…"
+                    : dbStatus.ok
+                    ? `base${dbStatus.tables ? ` · ${dbStatus.tables} tables` : ""}`
+                    : "base KO"}
+                </button>
+
+                {dbPanelOpen && dbStatus && (
+                  <div className="absolute right-0 mt-2 w-80 p-3 bg-white rounded-xl border border-slate-200 shadow-xl z-50 text-left">
+                    <div className="text-xs font-bold text-slate-900">{dbStatus.titre}</div>
+                    {dbStatus.detail && (
+                      <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">{dbStatus.detail}</p>
+                    )}
+                    {dbStatus.erreur && (
+                      <p className="text-[11px] font-mono text-rose-700 mt-1 break-all bg-rose-50 p-1.5 rounded">
+                        {dbStatus.erreur}
+                      </p>
+                    )}
+                    {dbStatus.hote && (
+                      <p className="text-[10px] text-slate-500 mt-1.5 font-mono break-all">
+                        hôte : {dbStatus.hote}
+                        {dbStatus.pooler === false && (
+                          <span className="text-amber-700 font-sans">
+                            {" "}
+                            ⚠ sans « -pooler » : risqué en serverless
+                          </span>
+                        )}
+                      </p>
+                    )}
+                    {dbStatus.action && (
+                      <p className="text-[11px] text-emerald-800 mt-2 bg-emerald-50 border border-emerald-200 rounded p-1.5">
+                        👉 {dbStatus.action}
+                      </p>
+                    )}
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={() => setDbPanelOpen(false)}
+                        className="px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 rounded"
+                      >
+                        Fermer
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => setIsNewProductOpen(true)}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg border border-emerald-200 transition-colors"
