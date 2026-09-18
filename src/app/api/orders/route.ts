@@ -15,6 +15,10 @@ import { db } from "@/db";
 import { orders, orderItems, products, stockMovements, customers } from "@/db/schema";
 import { desc, eq, and, or, ilike } from "drizzle-orm";
 
+// Les routes touchent la base : on interdit toute pré-génération au build
+// (sinon Next.js exécuterait le handler pendant "Collecting page data").
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

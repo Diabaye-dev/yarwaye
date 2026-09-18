@@ -14,6 +14,10 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+// Les routes touchent la base : on interdit toute pré-génération au build
+// (sinon Next.js exécuterait le handler pendant "Collecting page data").
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const allUsers = await db.select({

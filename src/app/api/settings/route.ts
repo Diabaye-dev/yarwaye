@@ -11,6 +11,10 @@ import { db } from "@/db";
 import { storeSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+// Les routes touchent la base : on interdit toute pré-génération au build
+// (sinon Next.js exécuterait le handler pendant "Collecting page data").
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const [settings] = await db.select().from(storeSettings).limit(1);

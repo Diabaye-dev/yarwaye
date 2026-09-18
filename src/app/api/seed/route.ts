@@ -9,6 +9,10 @@ import { db } from "@/db";
 import { users, products, customers, suppliers, orders, orderItems, stockMovements, storeSettings } from "@/db/schema";
 import { seedDatabase } from "@/db/seed";
 
+// Les routes touchent la base : on interdit toute pré-génération au build
+// (sinon Next.js exécuterait le handler pendant "Collecting page data").
+export const dynamic = "force-dynamic";
+
 export async function POST() {
   try {
     // On vide dans le bon ordre (tables enfants d’abord) pour éviter les orphelins.

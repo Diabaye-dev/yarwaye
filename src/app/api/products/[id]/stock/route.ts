@@ -10,6 +10,10 @@ import { db } from "@/db";
 import { products, stockMovements } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+// Les routes touchent la base : on interdit toute pré-génération au build
+// (sinon Next.js exécuterait le handler pendant "Collecting page data").
+export const dynamic = "force-dynamic";
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
