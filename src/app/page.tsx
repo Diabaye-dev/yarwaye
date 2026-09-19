@@ -71,13 +71,73 @@ export default function YarwayeShopPage() {
   const [dbPanelOpen, setDbPanelOpen] = useState(false);
   const [dbChecking, setDbChecking] = useState(false);
 
+  /**
+   * Vérifie l'accès à la base. Deux niveaux de secours, car le badge doit
+   * rester parlant même sur un déploiement ancien :
+   *   1. /api/db-status  -> diagnostic complet (causes nommées) ;
+   *   2. /api/health     -> sonde historique, présente dans toutes les versions ;
+   *   3. sinon           -> on explique qu'il s'agit d'un build périmé.
+   * cache:"no-store" : on refuse un diagnostic servi par le cache du navigateur.
+   */
   const checkDbStatus = async () => {
     setDbChecking(true);
     try {
-      const res = await fetch("/api/db-status");
-      setDbStatus(await res.json());
-    } catch {
-      setDbStatus({ ok: false, titre: "Route /api/db-status injoignable" });
+      const res = await fetch("/api/db-status", { cache: "no-store" });
+
+      // res.ok seul ne suffit pas : une page HTML (404, redirection login)
+      // passerait ici et ferait échouer .json().
+      let data: any = null;
+      if (res.ok) {
+        try {
+          data = await res.json();
+        } catch {
+          data = null;
+        }
+      }
+
+      if (!data) {
+        const fallback = await fetch("/api/health", { cache: "no-store" });
+        let health: any = null;
+        try {
+          health = await fallback.json();
+        } catch {
+          health = null;
+        }
+
+        data = health
+          ? {
+              ok: !!health.ok,
+              titre: health.ok
+                ? "Base connectée (diagnostic complet indisponible)"
+                : "Base inaccessible",
+              detail: health.ok
+                ? `/api/db-status n'existe pas sur ce déploiement (build ancien ou autre branche) ; /api/health, lui, répond : ${
+                    health.initialisation?.tables ?? "ok"
+                  }.`
+                : String(health.error ?? "sonde /api/health en échec"),
+              action: health.ok
+                ? "Redéployez depuis la branche la plus récente pour obtenir le diagnostic détaillé."
+                : "Ouvrez /api/health dans un onglet pour lire l'erreur brute.",
+              source: "health",
+            }
+          : {
+              ok: false,
+              titre: `Endpoints de diagnostic absents (HTTP ${res.status} / ${fallback.status})`,
+              detail:
+                "Ni /api/db-status ni /api/health ne répondent en JSON : le site servi n'est pas cette version du code (déploiement périmé, branche différente, ou build en échec).",
+              action:
+                "Vercel → Deployments → vérifier la branche et le statut du dernier build → Redeploy depuis feature/vitrine-client-complete (ou main une fois fusionnée).",
+            };
+      }
+
+      setDbStatus(data);
+    } catch (e: any) {
+      setDbStatus({
+        ok: false,
+        titre: "Réseau injoignable depuis le navigateur",
+        detail: e?.message ? String(e.message) : "fetch a échoué (site hors ligne, CORS, ou fonction serverless en erreur).",
+        action: "Ouvrez /api/health directement dans l'onglet pour confirmer que le serveur répond.",
+      });
     } finally {
       setDbChecking(false);
     }
